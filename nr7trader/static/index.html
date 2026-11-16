@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NR7 Trader</title>
+<meta name="theme-color" content="#0b0e13">
+<style>
+  :root { --bg: #0b0e13; --panel: #131820; --panel2: #18202b; --ink: #e9ecf1; --muted: #8a93a3; --line: #262e3b;
+          --accent: #7d9bff; --accent-ink: #0b0e13; --up: #4fd18b; --down: #ff7a7a; --warn: #f2c14e; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: rgba(11,14,19,.92); backdrop-filter: blur(8px);
+           border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px 18px;
+           align-items: center; }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: .01em; }
+  header .grow { flex: 1; }
+  main { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+  section h2 { font-size: 15px; margin: 0 0 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  section h2 .sub { color: var(--muted); font-weight: 400; font-size: 12.5px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12.5px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+          border: 1px solid var(--line); background: var(--panel2); font-size: 12.5px; white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--up); } .dot.off { background: var(--down); } .dot.warn { background: var(--warn); }
+  button { font: inherit; font-weight: 600; padding: 7px 14px; border-radius: 9px; border: 1px solid var(--line);
+           background: var(--panel2); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.danger { color: var(--down); border-color: #5a2d33; }
+  button.link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 500; }
+  button:disabled { opacity: .55; cursor: default; }
+  input, select { font: inherit; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--line);
+                  background: var(--bg); color: var(--ink); }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  label.sw { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+  label.sw input { appearance: none; width: 36px; height: 20px; border-radius: 999px; background: var(--line);
+                   position: relative; padding: 0; border: 0; cursor: pointer; transition: background .15s; }
+  label.sw input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+                          border-radius: 50%; background: var(--ink); transition: left .15s; }
+  label.sw input:checked { background: var(--up); }
+  label.sw input:checked::after { left: 18px; }
+  label.sw.real input:checked { background: var(--warn); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .tablewrap { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  td.num, th.num { text-align: right; }
+  td.wrap { white-space: normal; min-width: 180px; }
+  tr.plans td { background: var(--panel2); font-size: 12.5px; color: var(--muted); white-space: normal; }
+  .st { font-weight: 600; font-size: 12px; }
+  .st.WAIT, .st.BUYING, .st.SELLING { color: var(--warn); } .st.OPEN { color: var(--accent); }
+  .st.TARGET, .st.CLOSED { color: var(--up); } .st.STOP, .st.REJECTED { color: var(--down); }
+  .st.TIME, .st.EXPIRED, .st.SKIPPED, .st.CANCELLED { color: var(--muted); }
+  .up { color: var(--up); } .down { color: var(--down); }
+  .note { color: var(--muted); font-size: 12px; white-space: normal; }
+  .banner { border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+  .banner.err { background: #2a1519; border: 1px solid #5a2d33; color: #ffb3b3; }
+  .banner.warn { background: #2a2414; border: 1px solid #5a4b23; color: #f5d98b; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 12px; }
+  #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--panel2);
+           border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: none; z-index: 10;
+           max-width: calc(100% - 32px); }
+  #toast.err { border-color: #5a2d33; color: #ffb3b3; }
+  .loginbox { display: grid; gap: 10px; max-width: 360px; }
+  .loginbox input.code { font-size: 22px; letter-spacing: .35em; text-align: center; }
+  .empty { color: var(--muted); padding: 10px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NR7 Trader</h1>
+  <span class="chip" id="mkt"><span class="dot"></span><span>…</span></span>
+  <span class="grow"></span>
+  <span class="chip" id="kchip"><span class="dot"></span><span>Kotak …</span></span>
+  <label class="sw real" title="Real orders: also needs Trade switched on below">
+    <input type="checkbox" id="autotrade"> <b>Auto-trade</b>
+  </label>
+</header>
+
+<main>
+  <div id="banners"></div>
+
+  <div class="grid2">
+    <section id="kotak">
+      <h2>Kotak account <span class="sub" id="kotakSub"></span></h2>
+      <div id="kotakBody" class="muted">Loading…</div>
+    </section>
+
+    <section>
+      <h2>NR7 switches <span class="sub" id="lastScan"></span></h2>
+      <div class="row" style="margin-bottom:12px">
+        <label class="sw"><input type="checkbox" data-set="on"> Watch</label>
+        <label class="sw"><input type="checkbox" data-set="send"> Send to Telegram</label>
+        <label class="sw real"><input type="checkbox" data-set="trade"> Trade (real orders)</label>
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <button id="scanNow">Scan now</button>
+        <span class="small muted" id="rules"></span>
+      </div>
+      <div class="row">
+        <input id="skipDays" placeholder="Skip days: 2027-02-01 2027-01-31" style="flex:1;min-width:200px">
+        <button id="saveSkip">Save skip days</button>
+      </div>
+      <div class="small muted" style="margin-top:8px">No new trade on a skip day (Budget day and the day before,
+        election results). Auto-trade buys an in-the-money option only when both Auto-trade (top) and Trade are on.</div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Setups and trades <span class="sub">evening scan after 16:00 IST · followed on 1-minute bars in market hours</span></h2>
+    <div class="tablewrap"><table id="setups"></table></div>
+  </section>
+
+  <section>
+    <h2>Auto-trade orders <span class="sub" id="autoSub"></span></h2>
+    <div class="tablewrap"><table id="auto"></table></div>
+  </section>
+
+  <section>
+    <h2>Past trades
+      <select id="months">
+        <option value="1">1 month</option><option value="3" selected>3 months</option><option value="6">6 months</option>
+        <option value="12">12 months</option><option value="24">24 months</option>
+      </select>
+      <button id="loadHistory">Load</button>
+      <span class="sub">replayed on daily candles with the live rules, after costs</span>
+    </h2>
+    <div id="history" class="muted small">Pick a period and press Load.</div>
+  </section>
+
+  <section>
+    <h2>Backtest <button id="runBacktest">Run again</button> <span class="sub" id="btSub"></span></h2>
+    <div class="tablewrap"><table id="bt"></table></div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const num = (x, d = 2) => x == null ? "" : Number(x).toLocaleString("en-IN", {minimumFractionDigits: d, maximumFractionDigits: d});
+const rs = (x, d = 0) => x == null ? "" : "₹" + num(x, d);
+const sgn = (x, d = 2, suf = "") => x == null ? "" : `<span class="${x > 0 ? "up" : x < 0 ? "down" : ""}">${x > 0 ? "+" : ""}${num(x, d)}${suf}</span>`;
+let S = null, V = null;
+
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.className = err ? "err" : ""; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", err ? 8000 : 3500);
+}
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} :
+    {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const j = await r.json().catch(() => ({error: `HTTP ${r.status}`}));
+  if (r.status === 401 && j.login) { location.href = "/login"; throw new Error("login"); }
+  if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+  return j;
+}
+async function act(btn, fn) {
+  if (btn) btn.disabled = true;
+  try { return await fn(); } catch (e) { if (e.message !== "login") toast(e.message, true); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+// ---- status: market, Kotak session, Auto-trade -------------------------------------------------------
+function renderStatus() {
+  const k = S.kotak, t = S.trading;
+  $("#mkt").innerHTML = `<span class="dot ${S.market_open ? "on" : ""}"></span><span>NSE ${S.market_open ? "open" : "closed"} · ${esc(S.now.slice(11, 16))} IST</span>`;
+  $("#kchip").innerHTML = k.logged_in
+    ? `<span class="dot on"></span><span>Kotak · ${esc(k.name || k.ucc)}</span>`
+    : `<span class="dot ${k.auto_login ? "warn" : "off"}"></span><span>Kotak not logged in</span>`;
+  $("#autotrade").checked = t.enabled;
+  const b = [];
+  if (k.missing.length) b.push(`<div class="banner err">Kotak details missing in .env: ${esc(k.missing.join(", "))}. Fill them and restart.</div>`);
+  if (t.enabled && !k.logged_in && !k.auto_login) b.push(`<div class="banner warn">Auto-trade is on but Kotak isn't logged in, so no order can be placed or closed. Log in below.</div>`);
+  if (S.monitor.error) b.push(`<div class="banner warn">Tracker: ${esc(S.monitor.error)}</div>`);
+  if (!S.telegram) b.push(`<div class="banner warn">Telegram isn't set up (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID), so order steps reach you only here.</div>`);
+  $("#banners").innerHTML = b.join("");
+  renderKotak();
+}
+
+function renderKotak() {
+  const k = S.kotak, box = $("#kotakBody");
+  $("#kotakSub").textContent = k.auto_login ? "automatic login (TOTP secret in .env)" : "log in each day with your authenticator code";
+  const sig = JSON.stringify([k.logged_in, k.name, k.since, k.auto_login, k.mpin_saved, k.last_error]);
+  if (sig === renderKotak.sig) return;   // redraw only when the session changes (keeps typing and funds)
+  if (box.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
+  renderKotak.sig = sig;
+  if (k.logged_in) {
+    box.innerHTML = `<div class="row" style="margin-bottom:10px"><span class="chip"><span class="dot on"></span>${esc(k.name || "")} (${esc(k.ucc || "")})</span>
+      <span class="small muted">since ${esc((k.since || "").replace("T", " "))} · ${esc(k.how)}</span></div>
+      <div class="stats" id="funds"><div class="stat"><b>…</b><span>Funds available</span></div></div>
+      <div class="row" style="margin-top:12px"><button id="kRefresh">Refresh funds</button><button class="danger" id="kLogout">Log out</button></div>`;
+    $("#kRefresh").onclick = e => loadFunds(e.target);
+    $("#kLogout").onclick = e => act(e.target, async () => {
+      if (!confirm("Log out of Kotak? Auto-trade is switched off with it.")) return;
+      S = await api("/api/kotak/logout", {}); renderStatus(); toast("Logged out");
+    });
+    loadFunds();
+    return;
+  }
+  const err = k.last_error ? `<div class="banner err small">Last login failed: ${esc(k.last_error)}</div>` : "";
+  if (k.auto_login) {
+    box.innerHTML = `<div class="loginbox">${err}<span class="muted small">The app logs in by itself with the TOTP secret in .env.</span>
+      <button class="primary" id="kAuto">Log in now</button></div>`;
+    $("#kAuto").onclick = e => act(e.target, async () => { S = await api("/api/kotak/login", {}); renderStatus(); toast("Logged in"); });
+    return;
+  }
+  box.innerHTML = `<form class="loginbox" id="kForm" autocomplete="off">${err}
+    <span class="muted small">Client ${esc(k.ucc || "?")}: enter the 6-digit code your authenticator app shows for Kotak${k.mpin_saved ? "" : ", and your MPIN"}.</span>
+    <input class="code" id="kCode" inputmode="numeric" maxlength="6" placeholder="••••••" aria-label="Authenticator code">
+    ${k.mpin_saved ? "" : `<input id="kMpin" type="password" inputmode="numeric" maxlength="6" placeholder="MPIN" aria-label="MPIN">`}
+    <button class="primary" id="kGo">Log in to Kotak</button></form>`;
+  $("#kForm").onsubmit = e => { e.preventDefault(); act($("#kGo"), async () => {
+    S = await api("/api/kotak/login", {code: $("#kCode").value, mpin: $("#kMpin")?.value});
+    document.activeElement.blur(); renderStatus(); toast("Logged in to Kotak");
+  }); };
+}
+
+async function loadFunds(btn) {
+  await act(btn, async () => {
+    const f = await api("/api/kotak/funds");
+    const el = $("#funds"); if (!el) return;
+    el.innerHTML = `<div class="stat"><b>${rs(f.available)}</b><span>Funds available</span></div>
+      <div class="stat"><b>${rs(f.margin_used)}</b><span>Margin used</span></div>`;
+  });
+}
+
+$("#autotrade").onchange = e => act(null, async () => {
+  const on = e.target.checked;
+  if (on && !confirm("Switch Auto-trade ON? With Trade on too, NR7 triggers buy real options in your Kotak account.")) {
+    e.target.checked = false; return;
+  }
+  try { S = await api("/api/trading", {enabled: on}); }
+  finally { refreshStatus(); }
+  toast(on ? "Auto-trade ON" : "Auto-trade OFF");
+});
+
+// ---- NR7 view -------------------------------------------------------------------------------------------
+const NAME = idx => V?.indices?.[idx] || idx;
+
+function plansText(p) {
+  if (!p) return "";
+  if (p.error) return esc(p.error);
+  const out = [];
+  if (p.spot) out.push(`Index ${num(p.spot)}`);
+  const f = p.futures;
+  if (f) out.push(`Futures <b>${esc(f.tsym)}</b>` + (f.basis != null ? ` (buy above ${num(f.buy_above)} / sell below ${num(f.sell_below)})` : "")
+    + ` · ${f.lots} lot${f.lots === 1 ? "" : "s"} · ${rs(f.risk_per_lot)} risk per lot`);
+  for (const [k, label] of [["call", "Call"], ["put", "Put"]]) {
+    const o = p[k];
+    if (o) out.push(`${label} <b>${esc(o.tsym)}</b> ${rs(o.premium, 2)} · Δ${num(o.delta)} · ${rs(o.cost_per_lot)} per lot · ~${rs(o.loss_at_stop_per_lot)} lost per lot at the stop`);
+  }
+  return out.join("<br>");
+}
+
+function renderNR7() {
+  for (const el of document.querySelectorAll("[data-set]")) el.checked = !!V[el.dataset.set];
+  if (document.activeElement !== $("#skipDays")) $("#skipDays").value = (V.skip_days || []).join(" ");
+  $("#lastScan").textContent = V.last_scan ? `last scan ${V.last_scan}` : "";
+  const r = V.rules;
+  $("#rules").textContent = `NR${r.nr_days} · target ${r.target_r}R · out by ${r.exit_at} on day ${r.hold_days} · risk budget ${rs(V.budget)}`;
+
+  const rows = V.setups;
+  $("#setups").innerHTML = rows.length ? `<thead><tr><th>Index</th><th>NR7 day</th><th>Status</th><th class="num">Buy above</th>
+      <th class="num">Sell below</th><th class="num">Risk</th><th>Side</th><th class="num">Entry</th><th class="num">Stop</th>
+      <th class="num">Target</th><th class="num">Day</th><th class="num">Exit</th><th class="num">R</th><th>Note</th></tr></thead><tbody>` +
+    rows.map(t => `<tr><td>${esc(NAME(t.idx))}</td><td>${esc(t.nr7_date)}</td><td><span class="st ${esc(t.status)}">${esc(t.status)}</span></td>
+      <td class="num">${num(t.high)}</td><td class="num">${num(t.low)}</td><td class="num">${num(t.risk)}</td><td>${esc(t.side || "")}</td>
+      <td class="num">${num(t.entry)}</td><td class="num">${num(t.stop)}</td><td class="num">${num(t.target)}</td>
+      <td class="num">${t.day_no ?? ""}</td><td class="num">${num(t.exit)}</td><td class="num">${sgn(t.r)}</td>
+      <td class="note">${esc(t.note || "")}</td></tr>` +
+      (t.plans ? `<tr class="plans"><td colspan="14">${plansText(t.plans)}</td></tr>` : "")).join("") + "</tbody>"
+    : `<tr><td class="empty">No setups yet. The evening scan adds one when an index's range is the narrowest of 7 days.</td></tr>`;
+
+  const a = V.auto;
+  $("#autoSub").textContent = `${a.indices.join(", ")} · ${a.lots} lot · in-the-money monthly options ${a.min_days}+ days out · ` +
+    (a.active ? "ACTIVE" : `inactive (${[!a.auto_trade && "Auto-trade off", !a.trade && "Trade off"].filter(Boolean).join(", ") || "Watch off"})`);
+  const tr = a.trades;
+  $("#auto").innerHTML = tr.length ? `<thead><tr><th>Index</th><th>NR7 day</th><th>State</th><th>Side</th><th>Option</th>
+      <th class="num">Qty</th><th class="num">Bought</th><th class="num">Sold</th><th class="num">P&amp;L</th><th>Exit</th><th>Note</th><th></th></tr></thead><tbody>` +
+    tr.map(t => {
+      const pnl = t.exit_price && t.fill_price ? (t.exit_price - t.fill_price) * t.qty : null;
+      const can = ["WAIT", "BUYING", "OPEN"].includes(t.state);
+      return `<tr><td>${esc(NAME(t.idx))}</td><td>${esc(t.nr7_date)}</td><td><span class="st ${esc(t.state)}">${esc(t.state)}</span></td>
+        <td>${esc(t.side || "")}</td><td>${esc(t.tsym || "")}</td><td class="num">${t.qty ?? ""}</td>
+        <td class="num">${t.fill_price ? rs(t.fill_price, 2) : ""}</td><td class="num">${t.exit_price ? rs(t.exit_price, 2) : ""}</td>
+        <td class="num">${pnl == null ? "" : sgn(pnl, 0)}</td><td class="note">${esc(t.exit_why || "")}</td>
+        <td class="note">${esc(t.note || "")}</td>
+        <td>${can ? `<button class="danger" data-close="${esc(t.key)}">${t.state === "OPEN" ? "Sell now" : "Cancel"}</button>` : ""}</td></tr>`;
+    }).join("") + "</tbody>"
+    : `<tr><td class="empty">No auto-trades yet.</td></tr>`;
+
+  const bt = V.backtest;
+  $("#btSub").textContent = bt ? `run ${bt.run_at.replace("T", " ")} · daily candles, after costs` : "not run yet";
+  const ix = bt ? Object.entries(bt.indices).filter(([, s]) => s.trades) : [];
+  $("#bt").innerHTML = ix.length ? `<thead><tr><th>Index</th><th>From</th><th class="num">Trades</th><th class="num">Win %</th>
+      <th class="num">Avg R</th><th class="num">Total R</th><th class="num">PF</th><th class="num">Max DD</th><th class="num">Worst streak</th></tr></thead><tbody>` +
+    ix.map(([k, s]) => `<tr><td>${esc(NAME(k))}</td><td>${esc(s.from)}</td><td class="num">${s.trades}</td><td class="num">${s.win_pct}</td>
+      <td class="num">${sgn(s.avg_r, 3)}</td><td class="num">${sgn(s.total_r, 1)}</td><td class="num">${s.profit_factor ?? ""}</td>
+      <td class="num">${s.max_dd_r}R</td><td class="num">${s.max_losing_streak}</td></tr>`).join("") + "</tbody>"
+    : `<tr><td class="empty">Press Run again to backtest on all of Yahoo's daily history.</td></tr>`;
+}
+
+document.addEventListener("click", e => {
+  const key = e.target.dataset?.close;
+  if (!key) return;
+  if (!confirm(`Close the NR7 trade ${key} now? An open option is sold at the market (limit just under the bid).`)) return;
+  act(e.target, async () => { V = await api("/api/nr7/auto/close", {key}); renderNR7(); toast("Done"); });
+});
+
+for (const el of document.querySelectorAll("[data-set]")) {
+  el.onchange = () => act(null, async () => {
+    const on = el.checked;
+    if (el.dataset.set === "trade" && on && !confirm("Switch Trade (real orders) ON? Each NR7 trigger on " +
+        V.auto.indices.join(", ") + " buys an option in your Kotak account while Auto-trade is on.")) { el.checked = false; return; }
+    try { V = await api("/api/nr7/settings", {[el.dataset.set]: on}); } finally { renderNR7(); }
+  });
+}
+$("#saveSkip").onclick = e => act(e.target, async () => { V = await api("/api/nr7/settings", {skip_days: $("#skipDays").value}); renderNR7(); toast("Saved"); });
+$("#scanNow").onclick = e => act(e.target, async () => {
+  V = await api("/api/nr7/scan", {}); renderNR7(); toast(V.made ? `${V.made} new setup${V.made === 1 ? "" : "s"}` : "No new NR7");
+});
+$("#runBacktest").onclick = e => act(e.target, async () => { V = await api("/api/nr7/backtest", {}); renderNR7(); toast("Backtest done"); });
+
+$("#loadHistory").onclick = e => act(e.target, async () => {
+  $("#history").textContent = "Loading…";
+  const h = await api(`/api/nr7/history?months=${$("#months").value}`);
+  const tot = h.total;
+  const stats = `<div class="stats" style="margin-bottom:12px">
+    <div class="stat"><b>${tot.trades || 0}</b><span>closed trades (${tot.wins || 0} won)</span></div>
+    <div class="stat"><b>${sgn(tot.total_r || 0, 1, "R")}</b><span>total, after costs</span></div>
+    <div class="stat"><b>${sgn(tot.rs_per_lot || 0, 0)}</b><span>₹ for one futures lot</span></div>
+    <div class="stat"><b>${tot.expired} / ${tot.skipped}</b><span>expired / skipped</span></div></div>`;
+  const per = Object.entries(h.indices).map(([k, s]) => `${esc(NAME(k))}: ${s.trades || 0} trades, ${sgn(s.total_r || 0, 1, "R")}, ${sgn(s.rs_per_lot, 0)} per lot (lot ${s.lot}); one lot needs capital ${rs(s.capital_for_1_lot)} at your risk %`).join("<br>");
+  const rows = h.trades.map(t => `<tr><td>${esc(t.nr7_date)}</td><td>${esc(NAME(t.idx))}</td><td><span class="st ${esc(t.status)}">${esc(t.status)}</span></td>
+    <td>${esc(t.side || "")}</td><td class="num">${num(t.entry)}</td><td class="num">${t.exit ? num(t.exit) : t.mark ? "now " + num(t.mark) : ""}</td>
+    <td class="num">${t.days ?? ""}</td><td class="num">${sgn(t.r ?? t.open_r)}</td><td class="num">${sgn(t.rs_per_lot ?? t.rs_open_per_lot, 0)}</td>
+    <td class="note">${esc(t.note || "")}</td></tr>`).join("");
+  $("#history").innerHTML = stats + `<div class="small muted" style="margin-bottom:10px">${per}</div>` +
+    `<div class="tablewrap"><table><thead><tr><th>NR7 day</th><th>Index</th><th>Status</th><th>Side</th><th class="num">Entry</th>
+     <th class="num">Exit</th><th class="num">Days</th><th class="num">R</th><th class="num">₹ / lot</th><th>Note</th></tr></thead>
+     <tbody>${rows || `<tr><td colspan="10" class="empty">No setups in this period.</td></tr>`}</tbody></table></div>`;
+});
+
+async function refreshStatus() { try { S = await api("/api/status"); renderStatus(); } catch (e) { if (e.message !== "login") console.warn(e); } }
+async function refreshNR7() { try { V = await api("/api/nr7"); renderNR7(); } catch (e) { if (e.message !== "login") toast(e.message, true); } }
+refreshStatus(); refreshNR7();
+setInterval(refreshStatus, 10000);
+setInterval(refreshNR7, 30000);
+</script>
+</body>
+</html>
