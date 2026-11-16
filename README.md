@@ -60,5 +60,8 @@ on day 5, or when you press **Sell now**. Orders are limits `OPTION_PROTECTION_P
 re-priced after a minute if unfilled. Kotak's positions are checked before a sell, so a lot already closed in the
 Kotak app isn't sold again. Nothing rests at Kotak, so the dashboard must stay running. Every step goes to Telegram.
 
+## Android app
+`mobile/` runs the same rules entirely on an Android phone, with no PC or server (a Flutter port; see `mobile/README.md`). Run it **or** the PC app for real orders, not both, or each trigger is bought twice.
+
 ## Tests
 `.venv\Scripts\python -m pytest`. The tests never read `.env` or touch the network.
