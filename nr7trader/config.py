@@ -33,6 +33,11 @@ KOTAK_TOTP_SECRET = _get("KOTAK_TOTP_SECRET", "")   # base32 secret behind the T
 HOST = _get("HOST", "127.0.0.1")
 PORT = int(_get("PORT", "8060"))
 DASHBOARD_PIN = _get("DASHBOARD_PIN", "")           # other devices log in with it; empty = only this PC
+# Cloudflare Access in front of a Cloudflare Tunnel: a logged-in device whose request carries a valid Access token
+# for one of these emails may trade, like one on Tailscale. Empty = Cloudflare visitors can only look.
+CF_ACCESS_TEAM_DOMAIN = _get("CF_ACCESS_TEAM_DOMAIN", "").strip().removeprefix("https://").rstrip("/")
+CF_ACCESS_AUD = [a.strip() for a in _get("CF_ACCESS_AUD", "").split(",") if a.strip()]
+CF_ACCESS_EMAILS = [e.strip().lower() for e in _get("CF_ACCESS_EMAILS", "").split(",") if e.strip()]
 
 # Sizing (shown lots and the risk budget): RISK_PER_TRADE_PCT of CAPITAL at risk per trade
 CAPITAL = float(_get("CAPITAL", "100000"))
